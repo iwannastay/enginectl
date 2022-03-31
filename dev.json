@@ -1,0 +1,22 @@
+{
+	"category" :"deploy",
+	"webExport": 1,
+	"webPath": "",
+	"targetPort": 85,
+	"containers": [
+		{
+			"name": "frontend",
+			"image": "10.16.17.92:8433/public/es-frontend:v1",
+			"command": "/home/web/start.sh localhost:5555",
+			"port": [85]
+		},
+		{
+			"name": "backend",
+			"image": "10.16.17.92:8433/public/es-backend:v1",
+			"command": "/home/web/start.sh",
+			"port":[5555]
+		}
+	]
+}
+
+
