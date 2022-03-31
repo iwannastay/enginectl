@@ -64,19 +64,19 @@ public class Enginectl {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        base = urls.get("dev");
+        base = urls.get("pro");
 
     }
 
     public static void main(String[] args) throws FileNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
 
         /*
-        * operation flow 1: development
-        * create --name dev2 --baseImage 10.16.17.92:8433/library/ubuntu16.04-ssh:v1 --command /bin/bash
+        * example 1: development
+        * create --name dev2 --image 10.16.17.92:8433/library/ubuntu16.04-ssh:v1 --command /bin/bash
         * list dev
         * get dev dev1
         * connect dev1
-        * stop dev dev1 dev2 --save
+        * stop dev dev1 dev2 --save true
         * start dev dev1 dev2
         * save dev1
         * drop dev1 --image 10.16.17.92:8433/tmp/dev1:2021.08.08-00.07.00 10.16.17.92:8433/tmp/dev1:2021.08.08-00.16.42
@@ -85,7 +85,7 @@ public class Enginectl {
         */
 
         /*
-        * operation flow 2: deployment
+        * example 2: deployment
         * export --name test --images 10.16.17.92:8433/public/es-frontend:v1 10.16.17.92:8433/public/es-backend:v1
         * upload --name test --config dev.json
         * get app --deploy test --app app1
@@ -106,7 +106,7 @@ public class Enginectl {
         * */
 
         /*
-        * operator flow 3: user
+        * example 3: user
         * login --username test --password 123456
         * logout
         * adduser --username test --password 123456 --email 123@qq.com --role 1
@@ -114,7 +114,7 @@ public class Enginectl {
         * */
 
         /*
-         * operator flow 4: image
+         * example 4: image
          * pull busybox:latest
          * rm image 10.16.17.92:8433/public/busybox:latest
          * save image --containerID qwe --name busybox:latesttt
@@ -184,7 +184,7 @@ public class Enginectl {
         if(!values.isEmpty())
             pairs.put(last==null? "objects":last, values);
 
-        System.out.println(pairs);
+//        System.out.println(pairs);
 
         if(!errors.isEmpty())
             printArgsError(errors.toString());
@@ -264,6 +264,8 @@ public class Enginectl {
     }
 
     public void saveDevelopment() {
+        System.out.println("Please wait ... ");
+
         String url = base + urls.get("development") + "/save";
 
         checkArgs("objects");
@@ -380,7 +382,9 @@ public class Enginectl {
         jsonObject.put("name", name);
 
         String result = sendGET(url, jsonObject);
-        System.out.println(result);
+        VisualTool.showList(Collections.singletonList(JSONObject.parseObject(result))
+                , new ArrayList<>(Arrays.asList("sshLink","password","username"))
+        );
     }
 
     public void create() {
@@ -445,7 +449,7 @@ public class Enginectl {
 
     public boolean authorization() {
         String userPath = "/etc/enginectl/user";
-        HashMap<String, String> user = new HashMap<>();
+        HashMap<String, String> userInfo = new HashMap<>();
         try {
             BufferedReader bufferedReader = new BufferedReader(new FileReader(userPath));
             String str;
@@ -453,20 +457,21 @@ public class Enginectl {
             while ((str = bufferedReader.readLine()) != null) {
                 if (str.equals("")) continue;
                 index = str.indexOf(":");
-                user.put(str.substring(0, index), str.substring(index + 1).strip());
+                userInfo.put(str.substring(0, index), str.substring(index + 1).strip());
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         //TODO: login record exp
-        if (user.containsKey("username")&&user.containsKey("last_time_login")) {
+        if (userInfo.containsKey("username")&&userInfo.containsKey("last_time_login")) {
             try {
-                long last = ft.parse(user.get("last_time_login")).getTime();
+                long last = ft.parse(userInfo.get("last_time_login")).getTime();
                 long now = new Date().getTime();
                 int hours = (int) ((now - last) / (1000 * 60 * 60));
 
                 if(hours<24){
+                    user = userInfo.get("username");
                     return true;
                 }
 
@@ -500,7 +505,7 @@ public class Enginectl {
             FileWriter writer = null;
             try {
                 writer = new FileWriter(userPath);
-                writer.write("username: " + jsonObject.getString("username") + "\n");
+                writer.write("username: " + jsonObject.getString("user_name") + "\n");
                 writer.write("last_time_login: " + ft.format(new Date()) + "\n");
                 writer.close();
             } catch (IOException e) {
@@ -631,7 +636,10 @@ public class Enginectl {
         jsonObject.put("pageSize", 10);
 
         String result = sendGET(url, jsonObject);
-        System.out.println(result);
+
+        VisualTool.showList((List<JSONObject>)JSONObject.parseObject(result,ArrayList.class)
+                , new ArrayList<>(Arrays.asList("name","node","containerId","baseImage","user","status"))
+        );
     }
 
     public void listDeployment(){
@@ -641,7 +649,14 @@ public class Enginectl {
         jsonObject.put("user", user);
 
         String result = sendGET(url, jsonObject);
-        System.out.println(result);
+        List<JSONObject> data = JSONObject.parseObject(result).getObject("data", ArrayList.class);
+        for (JSONObject deploy : data) {
+            deploy.put("images",deploy.getObject("images",ArrayList.class).size());
+            deploy.put("configs",deploy.getObject("configs",JSONObject.class).keySet());
+        }
+        VisualTool.showList(data
+                , new ArrayList<>(Arrays.asList("name","user","images","configs","applications"))
+        );
     }
 
     public void listApplication(){
@@ -652,6 +667,10 @@ public class Enginectl {
 
         String result = sendGET(url, jsonObject);
         System.out.println(result);
+        List<JSONObject> data = JSONObject.parseObject(result).getObject("data", ArrayList.class);
+        VisualTool.showList(data
+                , new ArrayList<>(Arrays.asList("name","appID","taskID","jsonName","deployName","state"))
+        );
     }
 
     public void run(){
@@ -687,7 +706,7 @@ public class Enginectl {
         for(String name: objects){
             jsonObject.put("name", name);
             String result = sendPOST(url, jsonObject);
-            System.out.println(name + ": " + result);
+            System.out.println(name + ": " + (Boolean.valueOf(result)? "Start":"Failed"));
         }
     }
 
@@ -758,7 +777,7 @@ public class Enginectl {
         jsonObject.put("name", name);
 
         String result = sendGET(url, jsonObject);
-        System.out.println(result);
+        VisualTool.showJSON(JSONObject.parseObject(result));
     }
 
     public void getApplication(){
@@ -775,7 +794,7 @@ public class Enginectl {
         jsonObject.put("deployName", deployName);
 
         String result = sendGET(url, jsonObject);
-        System.out.println(result);
+        VisualTool.showJSON(JSONObject.parseObject(result));
     }
 
     public void logout(){
@@ -783,6 +802,9 @@ public class Enginectl {
         JSONObject jsonObject = new JSONObject();
         String result = sendPOST(url, jsonObject);
         System.out.println(result);
+
+        ToolBox.deleteFile("/etc/enginectl/user");
+
     }
 
     public void adduser(){
@@ -887,14 +909,11 @@ public class Enginectl {
         jsonObject.put("page_size", page_size);
 
         String result = sendGET(url, jsonObject);
-        try{
-            VisualTool.showList((List<JSONObject>)JSONObject.parseObject(result,ArrayList.class)
-                    , new ArrayList<>(Arrays.asList("name","tag","imageID","created","size"))
-            );
-        }catch(Exception e){
-            System.out.println("Something went wrong...");
-            e.printStackTrace();
-        }
+
+        VisualTool.showList((List<JSONObject>)JSONObject.parseObject(result,ArrayList.class)
+                , new ArrayList<>(Arrays.asList("name","tag","imageID","created","size"))
+        );
+
     }
 
     public void printArgsError(String str) {
