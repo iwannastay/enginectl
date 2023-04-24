@@ -72,21 +72,21 @@ public class Enginectl {
 
         /*
         * example 1: development
-        * create --name dev2 --image 10.16.17.92:8433/library/ubuntu16.04-ssh:v1 --command /bin/bash
+        * create --name dev2 --image 10.16.97.52:8433/library/ubuntu16.04-ssh:v1 --command /bin/bash
         * list dev
         * get dev dev1
         * connect dev1
         * stop dev dev1 dev2 --save true
         * start dev dev1 dev2
         * save dev1
-        * drop dev1 --image 10.16.17.92:8433/tmp/dev1:2021.08.08-00.07.00 10.16.17.92:8433/tmp/dev1:2021.08.08-00.16.42
-        * setdefault dev2 --image 10.16.17.92:8433/tmp/dev2:2021.08.07-23.57.55
+        * drop dev1 --image 10.16.97.52:8433/tmp/dev1:2021.08.08-00.07.00 10.16.97.52:8433/tmp/dev1:2021.08.08-00.16.42
+        * setdefault dev2 --image 10.16.97.52:8433/tmp/dev2:2021.08.07-23.57.55
         * rm dev dev1 dev2
         */
 
         /*
         * example 2: deployment
-        * export --name test --images 10.16.17.92:8433/public/es-frontend:v1 10.16.17.92:8433/public/es-backend:v1
+        * export --name test --images 10.16.97.52:8433/public/es-frontend:v1 10.16.97.52:8433/public/es-backend:v1
         * upload --name test --config dev.json
         * get app --deploy test --app app1
         * list deploy
@@ -116,9 +116,9 @@ public class Enginectl {
         /*
          * example 4: image
          * pull busybox:latest
-         * rm image 10.16.17.92:8433/public/busybox:latest
+         * rm image 10.16.97.52:8433/public/busybox:latest
          * save image --containerID qwe --name busybox:latesttt
-         * get image 10.16.17.92:8433/public/busybox:latest
+         * get image 10.16.97.52:8433/public/busybox:latest
          * list image --project library --page 1 --page_size 10
          * */
 
